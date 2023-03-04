@@ -61,15 +61,17 @@ async fn check_vanity_url(url: &str) -> bool {
     let mut res = surf::get(format!("https://discord.com/invite/{}", url)).await.unwrap();
     let text = res.body_string().await.unwrap();
 
+    //this text only exists on invalid discord invite pages
     !text.contains("<meta name=\"twitter:creator\" content=\"@discord\" />")
 }
 
 #[tokio::main]
 async fn set_vanity_url(url: &str) -> bool {
-    surf::post(format!("https://discord.com/api/v10/guilds/{}/vanity-url", env::var("GUILD_ID").unwrap()))
+    let res = surf::post(format!("https://discord.com/api/v10/guilds/{}/vanity-url", env::var("GUILD_ID").unwrap()))
         .header("Authorization", format!("Bot {}", env::var("TOKEN").unwrap()))
         .body_json(&VanityBody {
             code: url.to_string()
-        })
-        .unwrap().recv_string().await.is_ok()
+        }).unwrap().await.unwrap();
+
+    res.status().is_success()
 }
