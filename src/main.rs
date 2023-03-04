@@ -1,6 +1,8 @@
-use std::{fs, path::Path, process::exit, env, time, thread};
+use std::{env, fs, io::{stdout, Write}, path::Path, process::exit, thread, time::Duration};
+
+use clearscreen::clear;
+use colored::Colorize;
 use serde::Serialize;
-use serde_json::Value;
 
 #[derive(Serialize)]
 struct VanityBody {
@@ -8,32 +10,33 @@ struct VanityBody {
 }
 
 fn main() {
+    let mut stdout = stdout();
+    let mut round = 1;
     dotenv::dotenv().ok();
 
-    println!("{:?}", get_vanity_urls());
-
     loop {
-        println!("Checking...");
+        for (index, url) in get_vanity_urls().iter().enumerate() {
+            print!("\rChecking... ({}/{}) [round {}]", index + 1, get_vanity_urls().len(), round);
+            stdout.flush().unwrap();
 
-        for url in get_vanity_urls() {
             if check_vanity_url(&url) {
-                println!("✔ {} is a valid vanity url", url);
-                // if set_vanity_url(&url).await {
-                //     println!("Successfully set vanity url to {}", url);
-                // } else {
-                //     println!("Failed to set vanity url to {}", url);
-                // }
+                println!(" {}", url.green());
+
+                if set_vanity_url(url) {
+                    println!("{} Vanity URL set to {}", "Success".green(), url.green());
+                    exit(0);
+                } else {
+                    println!("{} Vanity URL set to {}", "Failed".red(), url.red());
+                }
             } else {
-                println!("❌ {} is not a valid vanity url", url);
+                println!(" {}", url.red());
             }
         }
 
-        println!("Done checking");
-        println!("Sleeping for 1 second");
-        println!();
-
-        thread::sleep(time::Duration::from_secs(1));
-
+        round += 1;
+        println!("Waiting 1 second...");
+        thread::sleep(Duration::from_secs(1));
+        clear().unwrap();
     }
 }
 
@@ -55,23 +58,15 @@ fn get_vanity_urls() -> Vec<String> {
 
 #[tokio::main]
 async fn check_vanity_url(url: &str) -> bool {
-    let mut res = surf::get(format!("https://discord.com/api/invites/{}", url)).await.unwrap();
+    let mut res = surf::get(format!("https://discord.com/invite/{}", url)).await.unwrap();
+    let text = res.body_string().await.unwrap();
 
-    if res.status() == 429 {
-        println!("Rate limited, retrying in {} seconds", res.header("Retry-After").unwrap());
-        thread::sleep(time::Duration::from_secs(20));
-        return false;
-    }
-
-    let json: Value = res.body_json().await.unwrap();
-
-    //code coincides with error code (string is the invite, int is an error code)
-    json["code"].is_string()
+    !text.contains("<meta name=\"twitter:creator\" content=\"@discord\" />")
 }
 
 #[tokio::main]
 async fn set_vanity_url(url: &str) -> bool {
-    surf::post(format!("https://discord.com/api/v8/guilds/{}/vanity-url", env::var("GUILD_ID").unwrap()))
+    surf::post(format!("https://discord.com/api/v10/guilds/{}/vanity-url", env::var("GUILD_ID").unwrap()))
         .header("Authorization", format!("Bot {}", env::var("TOKEN").unwrap()))
         .body_json(&VanityBody {
             code: url.to_string()
