@@ -1,0 +1,10 @@
+[31mFailed[0m Vanity URL set to [31mplural[0m[31mFailed[0m Vanity URL set to [31manger[0mFailed setting Vanity URL to plural
+Failed setting Vanity URL to anger
+Failed setting Vanity URL to plural
+Failed setting Vanity URL to anger
+[2023-03-04 01:41:45.912] Failed setting Vanity URL to plural
+[2023-03-04 01:41:46.210] Failed setting Vanity URL to anger
+[2023-03-04 01:41:47.712] Failed setting Vanity URL to plural
+[2023-03-04 01:41:48.084] Failed setting Vanity URL to anger
+[2023-03-04 01:41:49.518] Failed setting Vanity URL to plural
+[2023-03-04 01:41:49.789] Failed setting Vanity URL to anger

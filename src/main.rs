@@ -1,5 +1,6 @@
-use std::{env, fs, io::{stdout, Write}, path::Path, process::exit, thread, time::Duration};
+use std::{env, fs::{self, OpenOptions}, io::{stdout, Write}, path::Path, process::exit, thread, time::Duration};
 
+use chrono::Local;
 use clearscreen::clear;
 use colored::Colorize;
 use serde::Serialize;
@@ -14,27 +15,44 @@ fn main() {
     let mut round = 1;
     dotenv::dotenv().ok();
 
+    let vanity_urls = get_vanity_urls();
+
+    if vanity_urls.is_empty() {
+        println!("No vanity urls found");
+        exit(1);
+    }
+
     loop {
-        for (index, url) in get_vanity_urls().iter().enumerate() {
-            print!("\rChecking... ({}/{}) [round {}]", index + 1, get_vanity_urls().len(), round);
+        let mut results = String::new();
+
+        for (index, url) in vanity_urls.iter().enumerate() {
+
+            print!("\rChecking... ({}/{}) [round: {}] [mode: ∞]{}", index + 1, vanity_urls.len(), round, results);
             stdout.flush().unwrap();
 
             if check_vanity_url(&url) {
-                println!(" {}", url.green());
+                results.push_str(&format!(" {}", url.green()));
 
-                if set_vanity_url(url) {
-                    println!("{} Vanity URL set to {}", "Success".green(), url.green());
-                    exit(0);
-                } else {
-                    println!("{} Vanity URL set to {}", "Failed".red(), url.red());
-                }
+                // if set_vanity_url(url) {
+                //     println!("{} setting Vanity URL to {}", "Succeeded".green(), url.green());
+                //     log(&format!("Succeeded setting Vanity URL to {}\n", url));
+                //     exit(0);
+                // } else {
+                //     println!("{} setting Vanity URL to {}", "Failed".red(), url.red());
+                //     log(&format!("Failed setting Vanity URL to {}\n", url));
+                // }
             } else {
-                println!(" {}", url.red());
+                results.push_str(&format!(" {}", url.red()));
             }
         }
 
+        //last print
+        print!("\rChecking... ({}/{}) [round: {}] [mode: ∞]{}", vanity_urls.len(), vanity_urls.len(), round, results);
+
         round += 1;
-        println!("Waiting 1 second...");
+
+        //wait 1 second then clear and start again
+        println!("\nWaiting 1 second...");
         thread::sleep(Duration::from_secs(1));
         clear().unwrap();
     }
@@ -74,4 +92,19 @@ async fn set_vanity_url(url: &str) -> bool {
         }).unwrap().await.unwrap();
 
     res.status().is_success()
+}
+
+fn log(text: &str) {
+    //log to file
+    let mut file = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .create(true)
+        .open("log.txt")
+        .unwrap();
+
+    let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S%.3f");
+    let log_message = format!("[{}] {}", timestamp, text);
+
+    file.write_all(log_message.as_bytes()).unwrap();
 }

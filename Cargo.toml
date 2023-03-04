@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+chrono = "0.4.23"
 clearscreen = "2.0.0"
 colored = "2.0.0"
 dotenv = "0.15.0"
