@@ -3,12 +3,7 @@ use std::{env, fs::{self, OpenOptions}, io::{stdout, Write}, path::Path, process
 use chrono::Local;
 use clearscreen::clear;
 use colored::Colorize;
-use serde::Serialize;
-
-#[derive(Serialize)]
-struct VanityBody {
-    code: String
-}
+use serde_json::json;
 
 fn main() {
     let mut stdout = stdout();
@@ -25,18 +20,13 @@ fn main() {
         let mut results = String::new();
 
         for (index, url) in vanity_urls.iter().enumerate() {
-            print!("Checking...");
-
             if check_vanity_url(&url) {
                 results.push_str(&format!(" {}", url.green()));
 
-                if set_vanity_url(url) {
+                if set_vanity_url(&url) {
                     log(&format!("Succeeded setting Vanity URL to {}\n", url));
-                    get_vanity_urls().remove(index);
 
-                    if get_vanity_urls().is_empty() {
-                        exit(0);
-                    }
+                    exit(0);
                 } else {
                     log(&format!("Failed setting Vanity URL to {}\n", url));
                 }
@@ -78,17 +68,17 @@ async fn check_vanity_url(url: &str) -> bool {
     let mut res = surf::get(format!("https://discord.com/invite/{}", url)).await.unwrap();
     let text = res.body_string().await.unwrap();
 
-    //this text only exists on invalid discord invite pages
-    !text.contains("<meta name=\"twitter:creator\" content=\"@discord\" />")
+    //this text only exists on invalid discord invite pages, which means its not taken
+    text.contains("<meta name=\"twitter:creator\" content=\"@discord\" />")
 }
 
 #[tokio::main]
 async fn set_vanity_url(url: &str) -> bool {
-    let res = surf::post(format!("https://discord.com/api/v10/guilds/{}/vanity-url", env::var("GUILD_ID").unwrap()))
-        .header("Authorization", format!("Bot {}", env::var("TOKEN").unwrap()))
-        .body_json(&VanityBody {
-            code: url.to_string()
-        }).unwrap().await.unwrap();
+    let res = surf::patch(format!("https://discord.com/api/v10/guilds/{}/vanity-url", env::var("GUILD_ID").unwrap()))
+        .header("Authorization", env::var("TOKEN").unwrap())
+        .body(json!({ "code": &url }))
+        .send()
+        .await.unwrap();
 
     res.status().is_success()
 }
