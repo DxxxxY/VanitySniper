@@ -1,2 +1,4 @@
 target
 .env
+urls.txt
+log.txt
