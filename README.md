@@ -6,9 +6,9 @@ A really simple and efficient Vanity URL for Discord.
 
 ## Features
 - Checks with web-scraping to avoid API ratelimits.
-- Colorful and clean console output.
 - Able to check for multiple urls at once.
 - Coded in Rust for speed and efficiency.
+- Colorful and clean console output.
 
 ## Usage
 1. Download the latest release from [here](https://github.com/DxxxxY/VanitySniper/releases).
